@@ -37,17 +37,19 @@ async function getAuthToken(): Promise<string | undefined> {
     const browser = await puppeteer({ stealth: true });
     const page = await browser.newPage();
 
-    let authToken: string | undefined;
-
-    page.on('request', (request) => {
-        if (authToken || !request.url().includes('https://www.dataguidance.com/api/v1/kb/content/')) {
-            return;
-        }
-        const authHeader = request.headers().authorization;
-        if (authHeader?.startsWith('Bearer ')) {
-            authToken = authHeader.slice('Bearer '.length);
-            logger.info('dataguidance: Bearer token captured');
-        }
+    const tokenPromise = new Promise<string>((resolve, reject) => {
+        const timer = setTimeout(() => reject(new Error('dataguidance: timed out waiting for Bearer token')), 10_000);
+        page.on('request', (request) => {
+            if (!request.url().includes('https://www.dataguidance.com/api/v1/kb/content/')) {
+                return;
+            }
+            const authHeader = request.headers().authorization;
+            if (authHeader?.startsWith('Bearer ')) {
+                clearTimeout(timer);
+                logger.info('dataguidance: Bearer token captured');
+                resolve(authHeader.slice('Bearer '.length));
+            }
+        });
     });
 
     try {
@@ -62,16 +64,12 @@ async function getAuthToken(): Promise<string | undefined> {
         }
 
         await page.click('button[type="submit"]');
-        await page.waitForNavigation({ url: 'https://www.dataguidance.com/', timeout: 30_000 });
+        await page.waitForNavigation({ timeout: 10_000 });
 
         // Navigate to the news page to trigger an authenticated API request
         await page.goto('https://www.dataguidance.com/info?article_type=news_post', { waitUntil: 'networkidle2' });
 
-        // Poll up to 10 seconds for the token to be captured
-        for (let i = 0; i < 50 && !authToken; i++) {
-            await new Promise((resolve) => setTimeout(resolve, 200));
-        }
-
+        const authToken = await tokenPromise;
         if (!authToken) {
             throw new Error('dataguidance: failed to capture Bearer token after login');
         }
