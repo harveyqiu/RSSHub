@@ -1,6 +1,7 @@
 import { Route } from '@/types';
 import cache from '@/utils/cache';
 import ofetch from '@/utils/ofetch';
+import { config } from '@/config';
 
 import { parseDate } from '@/utils/parse-date';
 
@@ -18,11 +19,40 @@ export const route: Route = {
     url: 'https://www.dataguidance.com/info?article_type=news_post',
 };
 
+async function getAuthToken(): Promise<string | undefined> {
+    const { username, password } = config.dataguidance;
+    if (!username || !password) {
+        return undefined;
+    }
+
+    const cachedToken = await cache.get('dataguidance:token');
+    if (cachedToken) {
+        return cachedToken as string;
+    }
+
+    const loginResponse = await ofetch('https://www.dataguidance.com/api/v1/auth/login', {
+        method: 'POST',
+        body: { email: username, password },
+    });
+
+    const token = loginResponse.token ?? loginResponse.access_token ?? loginResponse.jwt;
+    if (token) {
+        await cache.set('dataguidance:token', token, 60 * 60); // cache for 1 hour
+    }
+    return token;
+}
+
 async function handler() {
     const rootUrl = 'https://www.dataguidance.com';
     const url = 'https://www.dataguidance.com/api/v1/kb/content/articles?news_types=510&news_types=511&news_types=512&news_types=513&order=DESC_publishedOn&limit=25&article_types=news_post';
 
-    const response = await ofetch(url);
+    const token = await getAuthToken();
+    const headers: Record<string, string> = {};
+    if (token) {
+        headers.Authorization = `Bearer ${token}`;
+    }
+
+    const response = await ofetch(url, { headers });
 
     const data = response.data;
 
@@ -38,7 +68,7 @@ async function handler() {
             cache.tryGet(item.link, async () => {
                 const detailUrl = `${baseUrl}${item.url}`;
 
-                const detailResponse = await ofetch(detailUrl);
+                const detailResponse = await ofetch(detailUrl, { headers });
 
                 item.description = detailResponse.contentBody?.html.en.replaceAll('\n', '<br>');
                 delete item.url;

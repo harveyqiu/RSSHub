@@ -116,6 +116,10 @@ export type Config = {
     civitai: {
         cookie?: string;
     };
+    dataguidance: {
+        username?: string;
+        password?: string;
+    };
     dianping: {
         cookie?: string;
     };
@@ -548,6 +552,10 @@ const calculateValue = () => {
         },
         civitai: {
             cookie: envs.CIVITAI_COOKIE,
+        },
+        dataguidance: {
+            username: envs.DATAGUIDANCE_USERNAME,
+            password: envs.DATAGUIDANCE_PASSWORD,
         },
         dianping: {
             cookie: envs.DIANPING_COOKIE,
