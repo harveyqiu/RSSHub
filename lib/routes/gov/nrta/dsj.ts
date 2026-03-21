@@ -1,9 +1,10 @@
-import { Route } from '@/types';
+import { load } from 'cheerio';
+import pMap from 'p-map';
+
+import type { Route } from '@/types';
 import cache from '@/utils/cache';
 import got from '@/utils/got';
-import { load } from 'cheerio';
 import { parseDate } from '@/utils/parse-date';
-import asyncPool from 'tiny-async-pool';
 
 export const route: Route = {
     path: '/nrta/dsj/:category?',
@@ -52,23 +53,22 @@ async function handler(ctx) {
             };
         });
 
-    const results = [];
+    const results = await pMap(
+        items,
+        (item) =>
+            cache.tryGet(item.link, async () => {
+                const { data: detailResponse } = await got(item.link);
 
-    for await (const item of asyncPool(5, items, (item) =>
-        cache.tryGet(item.link, async () => {
-            const { data: detailResponse } = await got(item.link);
+                const content = load(detailResponse);
 
-            const content = load(detailResponse);
+                content('table').last().remove();
 
-            content('table').last().remove();
+                item.description = content('td.newstext').html() || content('table').last().parent().parent().html();
 
-            item.description = content('td.newstext').html() || content('table').last().parent().parent().html();
-
-            return item;
-        })
-    )) {
-        results.push(item);
-    }
+                return item;
+            }),
+        { concurrency: 5 }
+    );
 
     return {
         item: results,

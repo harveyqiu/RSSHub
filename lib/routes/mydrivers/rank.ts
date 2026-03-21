@@ -1,9 +1,9 @@
-import { Route } from '@/types';
-import cache from '@/utils/cache';
-import got from '@/utils/got';
 import { load } from 'cheerio';
 
-import { rootUrl, getInfo, processItems } from './util';
+import type { Route } from '@/types';
+import got from '@/utils/got';
+
+import { getInfo, processItems, rootUrl } from './util';
 
 export const route: Route = {
     path: '/rank/:range?',
@@ -61,10 +61,10 @@ async function handler(ctx) {
             };
         });
 
-    items = await processItems(items, cache.tryGet);
+    items = await processItems(items);
 
     return {
         item: items,
-        ...(await getInfo(currentUrl, cache.tryGet, Number.parseInt(range, 10))),
+        ...(await getInfo(currentUrl, Number.parseInt(range, 10))),
     };
 }

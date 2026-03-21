@@ -1,8 +1,9 @@
-import { Route } from '@/types';
-import cache from '@/utils/cache';
-import { parseDate } from '@/utils/parse-date';
 import { load } from 'cheerio';
+
+import type { Route } from '@/types';
+import cache from '@/utils/cache';
 import got from '@/utils/got';
+import { parseDate } from '@/utils/parse-date';
 import timezone from '@/utils/timezone';
 
 export const route: Route = {
@@ -40,7 +41,7 @@ async function handler(ctx) {
     const $ = load(res.data);
 
     let title = $('title').text();
-    title = title.substring(0, title.indexOf('-'));
+    title = title.slice(0, title.indexOf('-'));
 
     const items = $('.main_conRCb > ul > li')
         .toArray()

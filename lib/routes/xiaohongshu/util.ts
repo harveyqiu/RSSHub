@@ -1,10 +1,12 @@
-import { config } from '@/config';
-import logger from '@/utils/logger';
-import { parseDate } from '@/utils/parse-date';
-import puppeteer from '@/utils/puppeteer';
-import { ofetch } from 'ofetch';
 import { load } from 'cheerio';
+
+import { config } from '@/config';
+import CaptchaError from '@/errors/types/captcha';
 import cache from '@/utils/cache';
+import logger from '@/utils/logger';
+import ofetch from '@/utils/ofetch';
+import { parseDate } from '@/utils/parse-date';
+import puppeteer, { getPuppeteerPage } from '@/utils/puppeteer';
 
 // Common headers for requests
 const getHeaders = (cookie?: string) => ({
@@ -27,25 +29,59 @@ const getHeaders = (cookie?: string) => ({
     ...(cookie ? { Cookie: cookie } : {}),
 });
 
+// Fetch HTML through proxy when configured
+async function fetchWithProxy(url: string, cookie?: string): Promise<string> {
+    const proxy = config.xiaohongshu.proxy;
+    if (proxy) {
+        const proxyUrl = `${proxy}?url=${encodeURIComponent(url)}`;
+        logger.http(`Requesting ${url} via proxy`);
+        return await ofetch(proxyUrl, { parseResponse: (txt) => txt });
+    }
+    logger.http(`Requesting ${url}`);
+    return await ofetch(url, {
+        headers: getHeaders(cookie),
+    });
+}
+
 const getUser = (url, cache) =>
     cache.tryGet(
         url,
         async () => {
-            const browser = await puppeteer({
-                stealth: true,
+            // Use proxy if configured
+            if (config.xiaohongshu.proxy) {
+                const res = await fetchWithProxy(url);
+                const $ = load(res);
+                const script = extractInitialState($);
+                const state = JSON.parse(script);
+
+                let { userPageData, notes } = state.user;
+                userPageData = userPageData._rawValue || userPageData;
+                notes = notes._rawValue || notes;
+
+                // Cannot get collect data without puppeteer
+                return { userPageData, notes, collect: '' };
+            }
+
+            // Use puppeteer
+            const { page, destory } = await getPuppeteerPage(url, {
+                onBeforeLoad: async (page) => {
+                    await page.setRequestInterception(true);
+                    page.on('request', (request) => {
+                        request.resourceType() === 'document' || request.resourceType() === 'script' || request.resourceType() === 'xhr' || request.resourceType() === 'other' ? request.continue() : request.abort();
+                    });
+                },
             });
             try {
-                const page = await browser.newPage();
-                await page.setRequestInterception(true);
                 let collect = '';
-                page.on('request', (request) => {
-                    request.resourceType() === 'document' || request.resourceType() === 'script' || request.resourceType() === 'xhr' || request.resourceType() === 'other' ? request.continue() : request.abort();
-                });
                 logger.http(`Requesting ${url}`);
                 await page.goto(url, {
                     waitUntil: 'domcontentloaded',
                 });
-                await page.waitForSelector('div.reds-tab-item:nth-child(2)');
+                await page.waitForSelector('div.reds-tab-item:nth-child(2), #red-captcha');
+
+                if (await page.$('#red-captcha')) {
+                    throw new CaptchaError('小红书风控校验，请稍后再试');
+                }
 
                 const initialState = await page.evaluate(() => (window as any).__INITIAL_STATE__);
 
@@ -71,7 +107,7 @@ const getUser = (url, cache) =>
 
                 return { userPageData, notes, collect };
             } finally {
-                browser.close();
+                await destory();
             }
         },
         config.cache.routeExpire,
@@ -82,6 +118,16 @@ const getBoard = (url, cache) =>
     cache.tryGet(
         url,
         async () => {
+            // Use proxy if configured
+            if (config.xiaohongshu.proxy) {
+                const res = await fetchWithProxy(url);
+                const $ = load(res);
+                const script = extractInitialSsrState($);
+                const state = JSON.parse(script);
+                return state.Main;
+            }
+
+            // Use puppeteer
             const browser = await puppeteer();
             try {
                 const page = await browser.newPage();
@@ -95,7 +141,7 @@ const getBoard = (url, cache) =>
                 const initialSsrState = await page.evaluate(() => (window as any).__INITIAL_SSR_STATE__);
                 return initialSsrState.Main;
             } finally {
-                browser.close();
+                await browser.close();
             }
         },
         config.cache.routeExpire,
@@ -126,18 +172,21 @@ async function renderNotesFulltext(notes, urlPrex, displayLivePhoto) {
         author: string;
         guid: string;
         pubDate: Date;
+        updated: Date;
     }> = [];
     const promises = notes.flatMap((note) =>
         note.map(async ({ noteCard, id }) => {
             const link = `${urlPrex}/${id}`;
-            const { title, description, pubDate } = await getFullNote(link, displayLivePhoto);
+            const guid = `${urlPrex}/${noteCard.noteId}`;
+            const { title, description, pubDate, updated } = await getFullNote(link, displayLivePhoto);
             return {
                 title,
                 link,
                 description,
                 author: noteCard.user.nickName,
-                guid: noteCard.noteId,
+                guid,
                 pubDate,
+                updated,
             };
         })
     );
@@ -147,9 +196,7 @@ async function renderNotesFulltext(notes, urlPrex, displayLivePhoto) {
 
 async function getFullNote(link, displayLivePhoto) {
     const data = (await cache.tryGet(link, async () => {
-        const res = await ofetch(link, {
-            headers: getHeaders(config.xiaohongshu.cookie),
-        });
+        const res = await fetchWithProxy(link, config.xiaohongshu.cookie);
         const $ = load(res);
         const script = extractInitialState($);
         const state = JSON.parse(script);
@@ -159,7 +206,8 @@ async function getFullNote(link, displayLivePhoto) {
         desc = desc.replaceAll(/\[.*?\]/g, '');
         desc = desc.replaceAll(/#(.*?)#/g, '#$1');
         desc = desc.replaceAll('\n', '<br>');
-        const pubDate = new Date(note.time);
+        const pubDate = parseDate(note.time, 'x');
+        const updated = parseDate(note.lastUpdateTime, 'x');
 
         let mediaContent = '';
         if (note.type === 'video') {
@@ -221,20 +269,20 @@ async function getFullNote(link, displayLivePhoto) {
                 .join('<br>');
         }
 
-        const description = `${mediaContent}<br>${title}<br>${desc}`;
+        const description = `${mediaContent}<br>${desc}`;
         return {
-            title,
+            title: title || note.desc,
             description,
             pubDate,
+            updated,
         };
-    })) as Promise<{ title: string; description: string; pubDate: Date }>;
+    })) as Promise<{ title: string; description: string; pubDate: Date; updated: Date }>;
     return data;
 }
 
-async function getUserWithCookie(url: string, cookie: string) {
-    const res = await ofetch(url, {
-        headers: getHeaders(cookie),
-    });
+async function getUserWithCookie(url: string) {
+    const cookie = config.xiaohongshu.cookie;
+    const res = await fetchWithProxy(url, cookie);
     const $ = load(res);
     const paths = $('#userPostedFeeds > section > div > a.cover.ld.mask').map((i, item) => item.attributes[3].value);
     const script = extractInitialState($);
@@ -243,7 +291,7 @@ async function getUserWithCookie(url: string, cookie: string) {
     for (const item of state.user.notes.flat()) {
         const path = paths[index];
         if (path && path.includes('?')) {
-            item.id = item.id + path?.substring(path.indexOf('?'));
+            item.id = item.id + path?.slice(path.indexOf('?'));
         }
         index = index + 1;
     }
@@ -263,4 +311,35 @@ function extractInitialState($) {
     return script;
 }
 
-export { getUser, getBoard, formatText, formatNote, renderNotesFulltext, getFullNote, getUserWithCookie };
+// Add helper function to extract initial SSR state
+function extractInitialSsrState($) {
+    let script = $('script')
+        .filter((i, script) => {
+            const text = script.children[0]?.data;
+            return text?.includes('window.__INITIAL_SSR_STATE__=');
+        })
+        .text();
+    const match = script.match(/window\.__INITIAL_SSR_STATE__\s*=\s*(\{[\s\S]*?\})\s*(?:;|$)/);
+    if (match) {
+        return match[1].replaceAll('undefined', 'null');
+    }
+    // Fallback: try simple extraction
+    const startMarker = 'window.__INITIAL_SSR_STATE__=';
+    const startIndex = script.indexOf(startMarker);
+    if (startIndex !== -1) {
+        script = script.slice(startIndex + startMarker.length);
+        script = script.replaceAll('undefined', 'null');
+        return script;
+    }
+    throw new Error('Cannot extract __INITIAL_SSR_STATE__');
+}
+
+async function checkCookie() {
+    const cookie = config.xiaohongshu.cookie;
+    const res = await ofetch('https://edith.xiaohongshu.com/api/sns/web/v2/user/me', {
+        headers: getHeaders(cookie),
+    });
+    return res.code === 0 && !!res.data.user_id;
+}
+
+export { checkCookie, formatNote, formatText, getBoard, getFullNote, getUser, getUserWithCookie, renderNotesFulltext };

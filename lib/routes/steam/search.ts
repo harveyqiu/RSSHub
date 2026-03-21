@@ -1,6 +1,7 @@
+import { load } from 'cheerio';
+
 import type { Route } from '@/types';
 import got from '@/utils/got';
-import { load } from 'cheerio';
 
 export const route: Route = {
     path: '/search/:params',
@@ -34,7 +35,6 @@ async function handler(ctx) {
                 const isBundle = !!$el.attr('data-ds-bundle-data');
                 const isDiscounted = $el.find('.discount_original_price').length > 0;
                 const hasReview = $el.find('.search_review_summary').length > 0;
-                const appID: string | undefined = $el.attr('data-ds-appid');
 
                 let desc = '';
                 if (isBundle) {
@@ -61,7 +61,7 @@ async function handler(ctx) {
                     description: desc.replaceAll('\n', '<br>'),
                     media: {
                         thumbnail: {
-                            url: `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appID}/header.jpg`,
+                            url: $el.find('.search_capsule img').attr('src'),
                         },
                     },
                 };

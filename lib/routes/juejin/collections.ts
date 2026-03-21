@@ -1,7 +1,8 @@
-import { Route } from '@/types';
+import type { Route } from '@/types';
 import ofetch from '@/utils/ofetch';
+
+import type { Article } from './types';
 import { getCollection, parseList, ProcessFeed } from './utils';
-import { Article } from './types';
 
 export const route: Route = {
     path: '/collections/:userId',
@@ -42,7 +43,7 @@ async function handler(ctx) {
     const collectionId = response.data.map((item) => item.tag_id);
 
     const temp = (await Promise.all(collectionId.map((id) => getArticleList(id)))) as Article[][];
-    const posts = temp.flat();
+    const posts = temp.flat().filter(Boolean);
     const list = parseList(posts);
 
     const result = await ProcessFeed(list);

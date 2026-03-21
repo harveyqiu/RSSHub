@@ -1,8 +1,8 @@
-import { Route } from '@/types';
-import cache from '@/utils/cache';
-import * as url from 'node:url';
-import got from '@/utils/got';
 import { load } from 'cheerio';
+
+import type { Route } from '@/types';
+import cache from '@/utils/cache';
+import got from '@/utils/got';
 
 export const route: Route = {
     path: '/jobcenter/:recruitType?/:city?/:type?/:order?/:latest?',
@@ -60,7 +60,8 @@ async function handler(ctx) {
     const $ = load(response.data);
     const list = $('ul.reco-job-list li')
         .slice(0, 30)
-        .map((_, item) => {
+        .toArray()
+        .map((item) => {
             item = $(item);
             const title = item.find('a.reco-job-title');
             const company = item.find('div.reco-job-com a');
@@ -75,11 +76,10 @@ async function handler(ctx) {
             }
             return {
                 title: `${company.text()} | ${title.text()}`,
-                link: url.resolve(rootUrl, title.attr('href')),
+                link: new URL(title.attr('href'), rootUrl).href,
                 pubDate: date.toUTCString(),
             };
-        })
-        .get();
+        });
 
     const items = await Promise.all(
         list.map((item) =>

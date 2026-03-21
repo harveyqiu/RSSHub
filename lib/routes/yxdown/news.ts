@@ -1,10 +1,12 @@
-import { Route } from '@/types';
+import { load } from 'cheerio';
+
+import type { Route } from '@/types';
 import cache from '@/utils/cache';
 import got from '@/utils/got';
-import { load } from 'cheerio';
-import timezone from '@/utils/timezone';
 import { parseDate } from '@/utils/parse-date';
-import { rootUrl, getCookie } from './utils';
+import timezone from '@/utils/timezone';
+
+import { getCookie, rootUrl } from './utils';
 
 export const route: Route = {
     path: '/news/:category?',
@@ -42,15 +44,15 @@ async function handler(ctx) {
     const $ = load(response.data);
 
     const list = $('.div_zixun h2 a')
-        .map((_, item) => {
+        .toArray()
+        .map((item) => {
             item = $(item);
 
             return {
                 title: item.text(),
                 link: `${rootUrl}${item.attr('href')}`,
             };
-        })
-        .get();
+        });
 
     const items = await Promise.all(
         list.map((item) =>

@@ -1,3 +1,4 @@
+// oxlint-disable no-undef
 /* eslint-disable unicorn/prefer-spread */
 /* eslint-disable unicorn/prefer-math-trunc */
 // @ts-nocheck
@@ -348,7 +349,7 @@ function generate_rc4_bb_str(url_search_params, user_agent, window_env_str, suff
     b[29] = Arguments[0] & 255;
 
     b[30] = (Arguments[1] / 256) & 255;
-    b[31] = Arguments[1] % 256 & 255;
+    b[31] = (Arguments[1] % 256) & 255;
     b[32] = (Arguments[1] >> 24) & 255;
     b[33] = (Arguments[1] >> 16) & 255;
 

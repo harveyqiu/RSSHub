@@ -1,6 +1,7 @@
-import { Route } from '@/types';
-import got from '@/utils/got';
 import { load } from 'cheerio';
+
+import type { Route } from '@/types';
+import got from '@/utils/got';
 import { parseDate } from '@/utils/parse-date';
 import timezone from '@/utils/timezone';
 
@@ -49,7 +50,8 @@ async function handler(ctx) {
     const $ = load(response.data);
     const title = $('#Title').text().trim();
     const list = $('#List tbody tr td table tbody tr td[width="96%"]')
-        .map((_, item) => {
+        .toArray()
+        .map((item) => {
             const tag = $(item).find('font a');
             const tag2 = $(item).find('font[size="2px"]');
             return {
@@ -57,8 +59,7 @@ async function handler(ctx) {
                 link: tag.attr('href'),
                 pubDate: timezone(parseDate(tag2.text().trim(), 'YYYY/MM/DD'), 0),
             };
-        })
-        .get();
+        });
 
     return {
         title: '深圳组工在线 - ' + title,

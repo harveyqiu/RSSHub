@@ -1,23 +1,21 @@
-import path from 'node:path';
+import type { Cheerio, CheerioAPI } from 'cheerio';
+import { load } from 'cheerio';
+import type { Element } from 'domhandler';
+import type { Context } from 'hono';
 
-import { type CheerioAPI, type Cheerio, type Element, load } from 'cheerio';
-import { type Context } from 'hono';
-
-import { type DataItem, type Route, type Data, ViewType } from '@/types';
-
-import { art } from '@/utils/render';
+import type { Data, DataItem, Route } from '@/types';
+import { ViewType } from '@/types';
 import cache from '@/utils/cache';
-import { getCurrentPath } from '@/utils/helpers';
 import ofetch from '@/utils/ofetch';
 import { parseDate } from '@/utils/parse-date';
 
-const __dirname = getCurrentPath(import.meta.url);
+import { renderDescription } from './templates/description';
 
 export const handler = async (ctx: Context): Promise<Data> => {
     const { category = 'zxyw' } = ctx.req.param();
     const limit: number = Number.parseInt(ctx.req.query('limit') ?? '11', 10);
 
-    const rootUrl: string = 'https://www.chinacdc.cn';
+    const rootUrl = 'https://www.chinacdc.cn';
     const targetUrl: string = new URL(category.endsWith('/') ? category : `${category}/`, rootUrl).href;
 
     const response = await ofetch(targetUrl);
@@ -45,7 +43,7 @@ export const handler = async (ctx: Context): Promise<Data> => {
                 pubDate = spanText ? parseDate(spanText) : undefined;
             }
 
-            const description: string = art(path.join(__dirname, 'templates/description.art'), {
+            const description: string = renderDescription({
                 intro: $item.find('p.zy').text(),
             });
 
@@ -86,8 +84,8 @@ export const handler = async (ctx: Context): Promise<Data> => {
                     const $$: CheerioAPI = load(detailResponse);
 
                     const detailTitle: string = $$('h5').text();
-                    const description: string = art(path.join(__dirname, 'templates/description.art'), {
-                        description: $$('div.TRS_Editor').html(),
+                    const description: string = renderDescription({
+                        description: $$('div.TRS_Editor').html() || undefined,
                     });
 
                     const detailDate = $$('span.fb em').text().trim();

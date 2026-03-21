@@ -1,9 +1,10 @@
-import { Route } from '@/types';
 import { load } from 'cheerio';
-import { parseDate } from '@/utils/parse-date';
 import dayjs from 'dayjs';
-import puppeteer from '@/utils/puppeteer';
+
 import InvalidParameterError from '@/errors/types/invalid-parameter';
+import type { Route } from '@/types';
+import { parseDate } from '@/utils/parse-date';
+import puppeteer from '@/utils/puppeteer';
 
 const baseUrl = 'https://sise.uestc.edu.cn/';
 
@@ -66,7 +67,7 @@ async function handler(ctx) {
         throw new InvalidParameterError('type not supported');
     }
 
-    const browser = await puppeteer({ stealth: true });
+    const browser = await puppeteer();
     const page = await browser.newPage();
     await page.setRequestInterception(true);
     page.on('request', (request) => {
@@ -83,7 +84,8 @@ async function handler(ctx) {
     const items = $(`div[id="${divId}"] p.news-item`);
 
     const out = $(items)
-        .map((_, item) => {
+        .toArray()
+        .map((item) => {
             item = $(item);
             const now = dayjs();
             let date = dayjs(now.year() + '-' + item.find('span').text().replace('/', '-'));
@@ -99,8 +101,7 @@ async function handler(ctx) {
                 link: newsLink,
                 pubDate: newsPubDate,
             };
-        })
-        .get();
+        });
 
     return {
         title: `信软学院通知-${mapTitle[type]}`,

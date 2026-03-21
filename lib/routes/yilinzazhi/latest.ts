@@ -1,12 +1,14 @@
-import { Data, DataItem, Route, ViewType } from '@/types';
-import cache from '@/utils/cache';
-import got from '@/utils/got';
 import { load } from 'cheerio';
 import dayjs from 'dayjs';
 
+import type { Data, DataItem, Route } from '@/types';
+import { ViewType } from '@/types';
+import cache from '@/utils/cache';
+import got from '@/utils/got';
+
 export const route: Route = {
     path: '/latest',
-    categories: ['reading', 'popular'],
+    categories: ['reading'],
     view: ViewType.Articles,
     example: '/yilinzazhi/latest',
     radar: [
@@ -68,7 +70,7 @@ async function handler(): Promise<Data> {
                 .toArray()
                 .map<Data>((aTag) => {
                     const href = $$(aTag).attr('href')!;
-                    const yearType = currentYear + href.substring(4, 5);
+                    const yearType = currentYear + href.slice(4, 5);
                     return {
                         title: $$(aTag).text(),
                         link: `${baseUrl}${currentYear}/yl${yearType}/${href}`,

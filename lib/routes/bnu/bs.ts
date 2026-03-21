@@ -1,7 +1,8 @@
-import { Route } from '@/types';
+import { load } from 'cheerio';
+
+import type { Route } from '@/types';
 import cache from '@/utils/cache';
 import got from '@/utils/got';
-import { load } from 'cheerio';
 import { parseDate } from '@/utils/parse-date';
 
 export const route: Route = {
@@ -45,7 +46,8 @@ async function handler(ctx) {
     const $ = load(response.data);
 
     const list = $('a[title]')
-        .map((_, item) => {
+        .toArray()
+        .map((item) => {
             item = $(item);
 
             return {
@@ -53,8 +55,7 @@ async function handler(ctx) {
                 pubDate: parseDate(item.prev().text()),
                 link: `${rootUrl}/${category}/${item.attr('href')}`,
             };
-        })
-        .get();
+        });
 
     const items = await Promise.all(
         list.map((item) =>

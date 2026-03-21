@@ -1,9 +1,4 @@
-import { art } from '@/utils/render';
-import { getCurrentPath } from '@/utils/helpers';
-
-import path from 'node:path';
-
-const __dirname = getCurrentPath(import.meta.url);
+import { renderDescription } from './templates/description';
 
 interface Style {
     [key: string]: string;
@@ -48,7 +43,7 @@ interface Content {
     entityMap: { [key: string]: Entity };
 }
 
-const imageBaseUrl: string = 'https://image.gcores.com';
+const imageBaseUrl = 'https://image.gcores.com';
 
 const STYLES: Readonly<Record<string, Style>> = {
     BOLD: { fontWeight: 'bold' },
@@ -97,7 +92,7 @@ const createEntityElement = (entity: Entity, text: string): string => {
         case 'EMBED':
             return entity.data.content.startsWith('http') ? `<a href="${entity.data.content}" target="_blank">${entity.data.content}</a>` : entity.data.content;
         case 'IMAGE':
-            return art(path.join(__dirname, 'templates/description.art'), {
+            return renderDescription({
                 images: entity.data.path
                     ? [
                           {
@@ -113,7 +108,7 @@ const createEntityElement = (entity: Entity, text: string): string => {
             if (!entity.data.images || !Array.isArray(entity.data.images)) {
                 return '';
             }
-            return art(path.join(__dirname, 'templates/description.art'), {
+            return renderDescription({
                 images: entity.data.images.map((image: any) => ({
                     src: new URL(image.path, imageBaseUrl).href,
                     alt: image.caption ?? entity.data.caption,
@@ -172,7 +167,7 @@ const parseBlock = (block: Block, entityMap: Readonly<Record<string, Entity>>): 
 
     // Group ranges by offset and length
     const groupedRangesMap = new Map<string, { offset: number; length: number; styles: Style[]; entities: Entity[] }>();
-    const groupedRanges: { offset: number; length: number; styles: Style[]; entities: Entity[] }[] = [];
+    const groupedRanges: Array<{ offset: number; length: number; styles: Style[]; entities: Entity[] }> = [];
 
     for (const range of combinedRanges) {
         const rangeKey = `${range.offset}-${range.length}`;
@@ -201,9 +196,9 @@ const parseBlock = (block: Block, entityMap: Readonly<Record<string, Entity>>): 
     let lastOffset = 0;
 
     for (const range of groupedRanges) {
-        resultParts.push(text.substring(lastOffset, range.offset));
+        resultParts.push(text.slice(lastOffset, range.offset));
 
-        let styledText = text.substring(range.offset, range.offset + range.length);
+        let styledText = text.slice(range.offset, range.offset + range.length);
 
         if (range.styles.length > 0) {
             const combinedStyle: Style = {};
@@ -225,7 +220,7 @@ const parseBlock = (block: Block, entityMap: Readonly<Record<string, Entity>>): 
         lastOffset = range.offset + range.length;
     }
 
-    resultParts.push(text.substring(lastOffset));
+    resultParts.push(text.slice(lastOffset));
 
     return `${blockType.element ? `<${blockType.element}>` : ''}${resultParts.join('').replaceAll('\n', '<br>')}${blockType.element ? `</${blockType.element}>` : ''}`;
 };

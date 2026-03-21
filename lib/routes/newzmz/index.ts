@@ -1,9 +1,10 @@
-import { Route } from '@/types';
-import cache from '@/utils/cache';
-import got from '@/utils/got';
 import { load } from 'cheerio';
 
-import { rootUrl, getItems, getItemInfo, processItems } from './util';
+import type { Route } from '@/types';
+import cache from '@/utils/cache';
+import got from '@/utils/got';
+
+import { getItemInfo, getItems, processItems, rootUrl } from './util';
 
 export const route: Route = {
     path: '/:id?/:downLinkType?',
@@ -41,7 +42,7 @@ async function handler(ctx) {
     // then consider it as the id of a movie or TV show;
     // otherwise, consider it as the id for the category.
 
-    const isCategory = !isNaN(id);
+    const isCategory = !Number.isNaN(id);
 
     const currentUrl = new URL(isCategory ? 'index.html' : `details-${id}.html`, rootUrl).href;
 

@@ -1,7 +1,8 @@
-import { Route } from '@/types';
+import { load } from 'cheerio';
+
+import type { Route } from '@/types';
 import cache from '@/utils/cache';
 import got from '@/utils/got';
-import { load } from 'cheerio';
 import { parseDate } from '@/utils/parse-date';
 import timezone from '@/utils/timezone';
 
@@ -45,15 +46,15 @@ async function handler(ctx) {
     const list = $('#content li')
         .not('.gl_line')
         .slice(0, 15)
-        .map((_, item) => {
+        .toArray()
+        .map((item) => {
             item = $(item);
             const a = item.find('a');
             return {
                 title: a.text(),
                 link: `${rootUrl}/cg/${caty}${a.attr('href').replace('.', '')}`,
             };
-        })
-        .get();
+        });
 
     const items = await Promise.all(
         list.map((item) =>

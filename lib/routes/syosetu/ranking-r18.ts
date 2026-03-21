@@ -1,13 +1,12 @@
-import { Route, Data, DataItem } from '@/types';
-import { art } from '@/utils/render';
-import path from 'node:path';
-import { Context } from 'hono';
-import { SearchBuilderR18, SearchParams, NarouNovelFetch } from 'narou';
-import InvalidParameterError from '@/errors/types/invalid-parameter';
-import { getCurrentPath } from '@/utils/helpers';
-import { RankingPeriod, periodToJapanese, novelTypeToJapanese, periodToOrder, NovelType, SyosetuSub, syosetuSubToJapanese, syosetuSubToNocgenre } from './types/ranking-r18';
+import type { Context } from 'hono';
+import type { SearchParams } from 'narou';
+import { NarouNovelFetch, SearchBuilderR18 } from 'narou';
 
-const __dirname = getCurrentPath(import.meta.url);
+import InvalidParameterError from '@/errors/types/invalid-parameter';
+import type { Data, DataItem, Route } from '@/types';
+
+import { renderDescription } from './templates/description';
+import { NovelType, novelTypeToJapanese, periodToJapanese, periodToOrder, RankingPeriod, SyosetuSub, syosetuSubToJapanese, syosetuSubToNocgenre } from './types/ranking-r18';
 
 /**
  * Implementation of "Syosetu" R18 Rankings
@@ -176,9 +175,7 @@ async function handler(ctx: Context): Promise<Data> {
     const items = result.values.map((novel, index) => ({
         title: `#${index + 1} ${novel.title}`,
         link: `https://novel18.syosetu.com/${String(novel.ncode).toLowerCase()}`,
-        description: art(path.join(__dirname, 'templates', 'description.art'), {
-            novel,
-        }),
+        description: renderDescription({ novel }),
         author: novel.writer,
         category: novel.keyword.split(/[\s/\uFF0F]/).filter(Boolean),
     }));

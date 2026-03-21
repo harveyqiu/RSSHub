@@ -1,9 +1,11 @@
-import { Route, ViewType } from '@/types';
+import { load } from 'cheerio';
+
+import type { Route } from '@/types';
+import { ViewType } from '@/types';
 import cache from '@/utils/cache';
 import ofetch from '@/utils/ofetch';
-import timezone from '@/utils/timezone';
-import { load } from 'cheerio';
 import { parseDate } from '@/utils/parse-date';
+import timezone from '@/utils/timezone';
 
 export const route: Route = {
     path: '/jwzx/:type?/:page?',
@@ -40,11 +42,10 @@ export const route: Route = {
 };
 
 async function handler(ctx) {
-    const JWZXBASE = 'http://jwzx.hrbust.edu.cn/homepage/';
+    const rootUrl = 'http://jwzx.hrbust.edu.cn/homepage/';
     const { type = 354, page = 12 } = ctx.req.param();
-    const url = JWZXBASE + 'infoArticleList.do?columnId=' + type + '&pagingNumberPer=' + page;
-
-    const response = await ofetch(url);
+    const columnUrl = rootUrl + 'infoArticleList.do?columnId=' + type + '&pagingNumberPer=' + page;
+    const response = await ofetch(columnUrl);
     const $ = load(response);
 
     const bigTitle = $('.columnTitle .wow span').text().trim();
@@ -53,7 +54,7 @@ async function handler(ctx) {
         .toArray()
         .map((item) => {
             const element = $(item);
-            const link = new URL(element.find('a').attr('href'), JWZXBASE).href;
+            const link = new URL(element.find('a').attr('href'), rootUrl).href;
             const title = element.find('a').text().trim();
             const pubDateText = element.find('span').text().trim();
             const pubDate = timezone(parseDate(pubDateText), +8);
@@ -67,7 +68,7 @@ async function handler(ctx) {
     const items = await Promise.all(
         list.map((item) =>
             cache.tryGet(item.link, async () => {
-                if (!item.link.startsWith(JWZXBASE)) {
+                if (!item.link.startsWith(rootUrl)) {
                     item.description = '本文需跳转，请点击原文链接后阅读';
                     return item;
                 }
@@ -89,8 +90,9 @@ async function handler(ctx) {
     );
 
     return {
-        title: `哈尔滨理工大学教务处 - ${bigTitle}`,
-        link: JWZXBASE,
+        title: `${bigTitle} - 哈尔滨理工大学教务处`,
+        link: columnUrl,
+        language: 'zh-CN',
         item: items,
     };
 }

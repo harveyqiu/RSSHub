@@ -1,14 +1,12 @@
-import { Route } from '@/types';
-import { getCurrentPath } from '@/utils/helpers';
-const __dirname = getCurrentPath(import.meta.url);
+import { load } from 'cheerio';
 
+import type { Route } from '@/types';
 import cache from '@/utils/cache';
 import got from '@/utils/got';
-import { load } from 'cheerio';
 import { parseDate } from '@/utils/parse-date';
 import timezone from '@/utils/timezone';
-import { art } from '@/utils/render';
-import path from 'node:path';
+
+import { renderOutlink } from './templates/outlink';
 
 const rootUrl = 'https://lvv2.com';
 
@@ -62,11 +60,11 @@ async function handler(ctx) {
     const response = await got(url);
     const $ = load(response.data);
     const list = $('#top-content-news > div')
-        .map((_, item) => ({
+        .toArray()
+        .map((item) => ({
             title: $(item).find('div.md > a').text(),
             link: new URL($(item).find('div.md > a').attr('href'), rootUrl).href.replace(/(https:\/\/lvv2\.com.*?)\/title.*/, '$1'),
-        }))
-        .get();
+        }));
 
     const items = await Promise.all(
         list.map((item) =>
@@ -89,9 +87,7 @@ async function handler(ctx) {
 
                               return description;
                           })
-                        : art(path.join(__dirname, 'templates/outlink.art'), {
-                              outlink: link,
-                          });
+                        : renderOutlink(link);
 
                 return item;
             })

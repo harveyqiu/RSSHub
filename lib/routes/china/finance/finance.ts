@@ -1,6 +1,7 @@
-import { Route } from '@/types';
-import cache from '@/utils/cache';
 import { load } from 'cheerio';
+
+import type { Route } from '@/types';
+import cache from '@/utils/cache';
 import got from '@/utils/got';
 import { parseDate } from '@/utils/parse-date';
 import timezone from '@/utils/timezone';
@@ -57,13 +58,13 @@ async function handler(ctx) {
     const listCategory = `中华网-财经-${categoryTitle}新闻`;
     const limit = ctx.req.query('limit') ? Number.parseInt(ctx.req.query('limit'), 10) : 30;
     const detailsUrls = $('.item-con-inner')
-        .map((_, item) => {
+        .toArray()
+        .map((item) => {
             item = $(item);
             return {
                 link: item.find('.tit>a').attr('href'),
             };
         })
-        .get()
         .filter((item) => item.link !== void 0)
         .slice(0, limit);
 

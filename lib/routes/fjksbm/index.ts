@@ -1,7 +1,8 @@
-import { Route } from '@/types';
+import { load } from 'cheerio';
+
+import type { Route } from '@/types';
 import cache from '@/utils/cache';
 import got from '@/utils/got';
-import { load } from 'cheerio';
 import { parseDate } from '@/utils/parse-date';
 import timezone from '@/utils/timezone';
 
@@ -35,7 +36,7 @@ async function handler(ctx) {
     const category = ctx.req.param('category') ?? '0';
 
     const id = Number.parseInt(category);
-    const isNumber = !isNaN(id);
+    const isNumber = !Number.isNaN(id);
 
     const rootUrl = 'https://fjksbm.com';
     const currentUrl = `${rootUrl}/portal${isNumber ? '' : `/${category}`}`;

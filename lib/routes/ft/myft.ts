@@ -1,8 +1,9 @@
-import { Route } from '@/types';
+import { load } from 'cheerio';
+
+import type { Route } from '@/types';
 import cache from '@/utils/cache';
 import got from '@/utils/got';
 import parser from '@/utils/rss-parser';
-import { load } from 'cheerio';
 
 export const route: Route = {
     path: '/myft/:key',
@@ -55,12 +56,12 @@ async function handler(ctx) {
                 item.category = [
                     $('.n-content-tag--with-follow').text(),
                     ...$('.article__right-bottom a.concept-list__concept')
-                        .map((i, e) => $(e).text().trim())
-                        .get(),
+                        .toArray()
+                        .map((e) => $(e).text().trim()),
                 ];
                 item.author = $('a.n-content-tag--author')
-                    .map((i, e) => ({ name: $(e).text() }))
-                    .get();
+                    .toArray()
+                    .map((e) => ({ name: $(e).text() }));
 
                 return item;
             })

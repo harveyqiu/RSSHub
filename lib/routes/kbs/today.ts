@@ -1,9 +1,10 @@
-import { Route } from '@/types';
+import { load } from 'cheerio';
+
+import type { Route } from '@/types';
 import cache from '@/utils/cache';
 import got from '@/utils/got';
-import { load } from 'cheerio';
-import timezone from '@/utils/timezone';
 import { parseDate } from '@/utils/parse-date';
+import timezone from '@/utils/timezone';
 
 export const route: Route = {
     path: '/today/:language?',
@@ -47,7 +48,8 @@ async function handler(ctx) {
     const $ = load(response.data);
 
     const list = $('.comp_text_1x article')
-        .map((_, item) => {
+        .toArray()
+        .map((item) => {
             item = $(item);
 
             const a = item.find('h2 a');
@@ -58,8 +60,7 @@ async function handler(ctx) {
                 link: `${rootUrl}/service${a.attr('href').replace('./', '/')}`,
                 pubDate: timezone(parseDate(item.find('.date').text()), +9),
             };
-        })
-        .get();
+        });
 
     const items = await Promise.all(
         list.map((item) =>

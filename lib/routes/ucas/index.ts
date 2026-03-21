@@ -1,7 +1,8 @@
-import { Route } from '@/types';
+import { load } from 'cheerio';
+
+import type { Route } from '@/types';
 import cache from '@/utils/cache';
 import got from '@/utils/got';
-import { load } from 'cheerio';
 import { parseDate } from '@/utils/parse-date';
 
 const rootUrl = 'https://zhaopin.ucas.ac.cn';
@@ -47,7 +48,7 @@ async function handler(ctx) {
     const response = await got.get(url);
 
     const $ = load(response.data);
-    const list = $('#col1_content > div.list > ul > li').get();
+    const list = $('#col1_content > div.list > ul > li').toArray();
 
     const items = await Promise.all(
         list.map(async (item) => {

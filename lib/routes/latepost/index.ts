@@ -1,9 +1,10 @@
-import { Route } from '@/types';
+import { load } from 'cheerio';
+
+import type { Route } from '@/types';
 import cache from '@/utils/cache';
 import got from '@/utils/got';
-import { load } from 'cheerio';
-import timezone from '@/utils/timezone';
 import { parseDate, parseRelativeDate } from '@/utils/parse-date';
+import timezone from '@/utils/timezone';
 
 /**
  * Convert an array into a dictionary object.
@@ -101,7 +102,7 @@ async function handler(ctx) {
                 const pubDate = content('div.article-header-date').text();
 
                 if (pubDate) {
-                    item.pubDate = /\d+月\d+日/.test(pubDate) ? parseDate(pubDate, ['MM月DD日 HH:mm', 'YYYY年MM月DD日 HH:mm']) : parseRelativeDate(pubDate);
+                    item.pubDate = /\d+月\d+日/.test(pubDate) ? parseDate(pubDate, ['YYYY年MM月DD日 HH:mm', 'MM月DD日 HH:mm']) : parseRelativeDate(pubDate);
                 }
 
                 item.pubDate = timezone(item.pubDate, +8);

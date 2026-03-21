@@ -1,11 +1,13 @@
-import { Route } from '@/types';
+import { load } from 'cheerio';
+
+import type { Route } from '@/types';
 import cache from '@/utils/cache';
 import got from '@/utils/got';
-import { load } from 'cheerio';
-import { parseDate } from '@/utils/parse-date';
-import { ProcessItem } from './utils';
-import parser from '@/utils/rss-parser';
 import logger from '@/utils/logger';
+import { parseDate } from '@/utils/parse-date';
+import parser from '@/utils/rss-parser';
+
+import { ProcessItem } from './utils';
 
 const rootUrl = 'https://navi.cnki.net';
 
@@ -79,19 +81,17 @@ async function handler(ctx) {
     const $ = load(response.data);
     const publications = $('dd');
 
-    const list = publications
-        .map((_, publication) => {
-            const title = $(publication).find('a').first().text();
-            const filename = $(publication).find('b').attr('id');
-            const link = `https://cnki.net/kcms/detail/detail.aspx?filename=${filename}&dbcode=CJFD`;
+    const list = publications.toArray().map((publication) => {
+        const title = $(publication).find('a').first().text();
+        const filename = $(publication).find('b').attr('id');
+        const link = `https://cnki.net/kcms/detail/detail.aspx?filename=${filename}&dbcode=CJFD`;
 
-            return {
-                title,
-                link,
-                pubDate: date,
-            };
-        })
-        .get();
+        return {
+            title,
+            link,
+            pubDate: date,
+        };
+    });
 
     const items = await Promise.all(list.map((item) => cache.tryGet(item.link, () => ProcessItem(item))));
 

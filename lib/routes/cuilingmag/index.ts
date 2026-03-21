@@ -1,13 +1,11 @@
-import { Route } from '@/types';
-import { getCurrentPath } from '@/utils/helpers';
-const __dirname = getCurrentPath(import.meta.url);
+import { load } from 'cheerio';
 
+import type { Route } from '@/types';
 import cache from '@/utils/cache';
 import got from '@/utils/got';
-import { load } from 'cheerio';
 import { parseDate } from '@/utils/parse-date';
-import { art } from '@/utils/render';
-import path from 'node:path';
+
+import { renderDescription } from './templates/description';
 
 export const handler = async (ctx) => {
     const { category } = ctx.req.param();
@@ -33,7 +31,7 @@ export const handler = async (ctx) => {
             const src = item.find('img').first().prop('src');
             const image = src ? new URL(src, rootUrl).href : undefined;
 
-            const description = art(path.join(__dirname, 'templates/description.art'), {
+            const description = renderDescription({
                 images: image
                     ? [
                           {
@@ -72,7 +70,7 @@ export const handler = async (ctx) => {
 
                 const description =
                     item.description +
-                    art(path.join(__dirname, 'templates/description.art'), {
+                    renderDescription({
                         images: banner
                             ? [
                                   {
@@ -135,7 +133,7 @@ export const route: Route = {
     path: '/:category?',
     name: '分类',
     url: 'cuilingmag.com',
-    categories: ['new-media', 'popular'],
+    categories: ['new-media'],
     maintainers: ['nczitzk'],
     handler,
     example: '/cuilingmag',
@@ -153,7 +151,6 @@ export const route: Route = {
 | [数字治理](https://www.cuilingmag.com/category/digital_governance)         | [digital_governance](https://rsshub.app/cuilingmag/digital_governance)           |
 | [Noema精选](https://www.cuilingmag.com/category/selected_noema)            | [selected_noema](https://rsshub.app/cuilingmag/selected_noema)                   |
   `,
-    categories: ['new-media'],
 
     features: {
         requireConfig: false,

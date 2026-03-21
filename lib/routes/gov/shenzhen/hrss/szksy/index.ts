@@ -1,6 +1,7 @@
-import { Route } from '@/types';
-import got from '@/utils/got';
 import { load } from 'cheerio';
+
+import type { Route } from '@/types';
+import got from '@/utils/got';
 import { parseDate } from '@/utils/parse-date';
 import timezone from '@/utils/timezone';
 
@@ -50,7 +51,8 @@ async function handler(ctx) {
     const title = $('.zx_rm_tit span').text().trim();
     const list = $('.zx_ml_list ul li')
         .slice(1)
-        .map((_, item) => {
+        .toArray()
+        .map((item) => {
             const tag = $(item).find('div.list_name a');
             const tag2 = $(item).find('span:eq(1)');
             return {
@@ -58,8 +60,7 @@ async function handler(ctx) {
                 link: tag.attr('href'),
                 pubDate: timezone(parseDate(tag2.text().trim(), 'YYYY/MM/DD'), 0),
             };
-        })
-        .get();
+        });
 
     return {
         title: '深圳市考试院 - ' + title,

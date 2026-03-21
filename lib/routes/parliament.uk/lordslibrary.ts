@@ -1,5 +1,6 @@
 import { load } from 'cheerio';
-import { Route } from '@/types';
+
+import type { Route } from '@/types';
 import puppeteer from '@/utils/puppeteer';
 import timezone from '@/utils/timezone';
 
@@ -46,7 +47,7 @@ async function handler(ctx) {
             description: $(article).find('p').last().text().trim(),
             pubDate: timezone($(article).find('.card__date time').attr('datetime')),
         }));
-    browser.close();
+    await browser.close();
     return {
         title: `parliament - lordslibrary - ${topic}`,
         link: url,

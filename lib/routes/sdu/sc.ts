@@ -1,7 +1,8 @@
-import { Route } from '@/types';
+import { load } from 'cheerio';
+
+import type { Route } from '@/types';
 import cache from '@/utils/cache';
 import got from '@/utils/got';
-import { load } from 'cheerio';
 import { parseDate } from '@/utils/parse-date';
 
 const host = 'https://www.sc.sdu.edu.cn/';
@@ -37,7 +38,8 @@ async function handler(ctx) {
     const $ = load(response.data);
 
     let item = $('.newlist01 li')
-        .map((_, e) => {
+        .toArray()
+        .map((e) => {
             e = $(e);
             const a = e.find('a');
             let link = a.attr('href');
@@ -47,8 +49,7 @@ async function handler(ctx) {
                 link,
                 pubDate: parseDate(e.find('.date').text().trim()),
             };
-        })
-        .get();
+        });
 
     item = await Promise.all(
         item.map((item) =>

@@ -1,14 +1,17 @@
-import { Route } from '@/types';
+/* eslint-disable unicorn/prefer-code-point */
+import { load } from 'cheerio';
+
+import type { Route } from '@/types';
 import cache from '@/utils/cache';
 import got from '@/utils/got';
-import { load } from 'cheerio';
 import { parseDate } from '@/utils/parse-date';
 import timezone from '@/utils/timezone';
+
 import { baseUrl, categoryMap } from './data';
 
 export const route: Route = {
     path: '/:category?',
-    categories: ['new-media', 'popular'],
+    categories: ['new-media'],
     example: '/hkepc/news',
     parameters: { category: '分类，见下表，默认为最新消息' },
     features: {
@@ -110,7 +113,7 @@ async function handler(ctx) {
                     .map((e) => $(e).text().trim());
                 item.description = content.html();
                 item.pubDate = timezone(parseDate($('.publishDate').text()), +8);
-                item.guid = item.link.substring(0, item.link.lastIndexOf('/'));
+                item.guid = item.link.slice(0, item.link.lastIndexOf('/'));
 
                 return item;
             })

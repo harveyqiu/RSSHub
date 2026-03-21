@@ -1,8 +1,9 @@
-import { Route } from '@/types';
+import { load } from 'cheerio';
+
+import type { Route } from '@/types';
+import cache from '@/utils/cache';
 import ofetch from '@/utils/ofetch';
 import { parseDate } from '@/utils/parse-date';
-import cache from '@/utils/cache';
-import { load } from 'cheerio';
 
 const apiKey = '0QfOX3Vn51YCzitbLaRkTTBadtWpgTN8NZLW0C1SEM';
 const fetchedArticleContentHtmlImgRegex = /<img data-reference="image" data-document-id="cms\/api\/amp\/image\/([A-Za-z0-9]+)">/;
@@ -35,7 +36,7 @@ export const route: Route = {
         const { market, name, id } = ctx.req.param();
         let truncatedId = id;
         if (truncatedId.startsWith('sr-')) {
-            truncatedId = truncatedId.substring(3);
+            truncatedId = truncatedId.slice(3);
         }
 
         const pageData = await ofetch(`https://www.msn.com/${market}/channel/source/${name}/${id}`);
@@ -54,7 +55,7 @@ export const route: Route = {
                 const parsedArticleUrl = URL.parse(articleUrl);
                 let articleId = parsedArticleUrl?.pathname.split('/').pop();
                 if (articleId?.startsWith('ar-')) {
-                    articleId = articleId.substring(3);
+                    articleId = articleId.slice(3);
                     const fetchedArticleContentHtml = (await cache.tryGet(articleId, async () => {
                         const articleData = await ofetch(`https://assets.msn.com/content/view/v2/Detail/${market}/${articleId}`);
                         return articleData.body;

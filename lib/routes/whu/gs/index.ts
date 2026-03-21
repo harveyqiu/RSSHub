@@ -1,7 +1,8 @@
-import { Route } from '@/types';
+import { load } from 'cheerio';
+
+import type { Route } from '@/types';
 import cache from '@/utils/cache';
 import got from '@/utils/got';
-import { load } from 'cheerio';
 import { parseDate } from '@/utils/parse-date';
 
 const gsIndexMap = new Map([
@@ -53,8 +54,8 @@ async function handler(ctx) {
     const $ = load(response.data);
     const feed_title = $('div.location a')
         .slice(-2)
-        .map((index, element) => $(element).text())
-        .get()
+        .toArray()
+        .map((element) => $(element).text())
         .join(' > ');
 
     let items = $('.list ul li')

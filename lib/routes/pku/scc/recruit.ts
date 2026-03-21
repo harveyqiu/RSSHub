@@ -1,7 +1,8 @@
-import { Route } from '@/types';
+import { load } from 'cheerio';
+
+import type { Route } from '@/types';
 import cache from '@/utils/cache';
 import got from '@/utils/got';
-import { load } from 'cheerio';
 import { parseDate } from '@/utils/parse-date';
 
 const arr = {
@@ -44,7 +45,8 @@ async function handler(ctx) {
     const feed_title = $('h2.category').text();
 
     const list = $('div#articleList-body div.item.clearfix')
-        .map((_, item) => {
+        .toArray()
+        .map((item) => {
             item = $(item);
             const a = item.find('a');
             const date = parseDate(item.find('div.item-date').text());
@@ -53,10 +55,9 @@ async function handler(ctx) {
                 link: new URL(a.attr('href'), baseUrl).href,
                 pubDate: date,
             };
-        })
-        .get();
+        });
 
-    const sorted = list.sort((a, b) => b.pubDate.getTime() - a.pubDate.getTime()).slice(0, 10);
+    const sorted = list.toSorted((a, b) => b.pubDate.getTime() - a.pubDate.getTime()).slice(0, 10);
 
     return {
         title: `北京大学学生就业指导服务中心 - ${feed_title}`,

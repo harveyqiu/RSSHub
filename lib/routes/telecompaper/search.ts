@@ -1,7 +1,8 @@
-import { Route } from '@/types';
+import { load } from 'cheerio';
+
+import type { Route } from '@/types';
 import cache from '@/utils/cache';
 import got from '@/utils/got';
-import { load } from 'cheerio';
 
 export const route: Route = {
     path: '/search/:keyword?/:company?/:sort?/:period?',
@@ -72,7 +73,8 @@ async function handler(ctx) {
 
     const list = $('table.details_rows tbody tr')
         .slice(0, 15)
-        .map((_, item) => {
+        .toArray()
+        .map((item) => {
             item = $(item);
             const a = item.find('a');
             return {
@@ -80,8 +82,7 @@ async function handler(ctx) {
                 link: a.attr('href'),
                 pubDate: new Date(item.find('span.source').text().split(' | ')[0] + ' GMT+1').toUTCString(),
             };
-        })
-        .get();
+        });
 
     const items = await Promise.all(
         list.map((item) =>

@@ -1,12 +1,14 @@
-import { Route, ViewType } from '@/types';
-import cache from '@/utils/cache';
 import * as cheerio from 'cheerio';
+
+import type { Route } from '@/types';
+import { ViewType } from '@/types';
+import cache from '@/utils/cache';
 import ofetch from '@/utils/ofetch';
 import { parseDate } from '@/utils/parse-date';
 
 export const route: Route = {
     path: '/blog',
-    categories: ['social-media', 'popular'],
+    categories: ['social-media'],
     view: ViewType.Articles,
     example: '/telegram/blog',
     parameters: {},
@@ -37,7 +39,7 @@ async function handler() {
 
     const items = await Promise.all(
         $$('.dev_blog_card_link_wrap')
-            .get()
+            .toArray()
             .map((each) => {
                 const $ = $$(each);
                 const link = 'https://telegram.org' + $.attr('href');

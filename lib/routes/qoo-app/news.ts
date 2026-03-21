@@ -1,9 +1,10 @@
-import { Route } from '@/types';
-import got from '@/utils/got';
 import { load } from 'cheerio';
+
+import type { Route } from '@/types';
+import got from '@/utils/got';
 import { parseDate } from '@/utils/parse-date';
 
-import { newsUrl, siteIcon, fixImg } from './utils';
+import { fixImg, newsUrl, siteIcon } from './utils';
 
 export const route: Route = {
     path: '/news/:lang?',
@@ -43,7 +44,7 @@ async function handler(ctx) {
 
         return {
             title: item.title.rendered,
-            link: item.link.substring(0, item.link.lastIndexOf('/')),
+            link: item.link.slice(0, item.link.lastIndexOf('/')),
             description: $.html(),
             pubDate: parseDate(item.date_gmt),
         };

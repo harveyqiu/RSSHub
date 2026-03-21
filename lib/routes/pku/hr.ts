@@ -1,7 +1,8 @@
-import { Route } from '@/types';
+import { load } from 'cheerio';
+
+import type { Route } from '@/types';
 import cache from '@/utils/cache';
 import got from '@/utils/got';
-import { load } from 'cheerio';
 import { parseDate } from '@/utils/parse-date';
 
 export const route: Route = {
@@ -34,7 +35,7 @@ export const route: Route = {
 };
 
 async function handler(ctx) {
-    const category = ctx.req.param('category')?.replace(/-/g, '/') ?? 'zxgg';
+    const category = ctx.req.param('category')?.replaceAll('-', '/') ?? 'zxgg';
 
     const rootUrl = 'https://hr.pku.edu.cn/';
     const currentUrl = `${rootUrl}/${category}/index.htm`;
@@ -47,15 +48,15 @@ async function handler(ctx) {
     const $ = load(response.data);
 
     const list = $('.item-list li a')
-        .map((_, item) => {
+        .toArray()
+        .map((item) => {
             item = $(item);
 
             return {
                 title: item.text().replace(/\d+、/, ''),
                 link: `${rootUrl}/${category}/${item.attr('href')}`,
             };
-        })
-        .get();
+        });
 
     const items = await Promise.all(
         list.map((item) =>

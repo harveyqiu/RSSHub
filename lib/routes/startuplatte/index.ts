@@ -1,12 +1,13 @@
-import { Route } from '@/types';
+import { load } from 'cheerio';
+
+import type { Route } from '@/types';
 import cache from '@/utils/cache';
 import got from '@/utils/got';
-import { load } from 'cheerio';
 import { parseDate } from '@/utils/parse-date';
 
 export const route: Route = {
     path: '/:category?',
-    categories: ['new-media', 'popular'],
+    categories: ['new-media'],
     example: '/startuplatte',
     parameters: { category: '分类，见下表，默认为首頁' },
     features: {
@@ -44,15 +45,15 @@ async function handler(ctx) {
     const $ = load(response.data);
 
     const list = $('.post-header h2 a')
-        .map((_, item) => {
+        .toArray()
+        .map((item) => {
             item = $(item);
 
             return {
                 title: item.text(),
                 link: item.attr('href'),
             };
-        })
-        .get();
+        });
 
     const items = await Promise.all(
         list.map((item) =>

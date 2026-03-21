@@ -1,27 +1,27 @@
 export interface CreatorData {
     meta: {
-        desc: string;
-        height: null;
+        // desc: string;
+        // height: null;
         imageUrl: string;
         isPrivate: boolean;
-        key: string;
-        openGraph: OpenGraph;
-        title: string;
+        // key: string;
+        // openGraph: OpenGraph;
+        // title: string;
         url: string;
         videoHeight: null;
-        videoUrl: null;
+        // videoUrl: null;
         videoWidth: null;
-        viewport: string;
+        // viewport: string;
     };
     id: string;
     attributes: IncludedAttributes;
 }
 
-interface OpenGraph {
-    desc: null;
-    imageUrl: null;
-    title: null;
-}
+// interface OpenGraph {
+//     desc: null;
+//     imageUrl: null;
+//     title: null;
+// }
 
 export interface PostData {
     data: Datum[];
@@ -83,6 +83,14 @@ interface Image {
     thumb_square_large_url?: string;
     thumb_square_url?: string;
     thumb_url?: string;
+    thumbnail: string;
+    default?: string;
+    default_blurred?: string;
+    default_blurred_small?: string;
+    default_small?: string;
+    original?: string;
+    thumbnail_large?: string;
+    thumbnail_small?: string;
 }
 
 interface PostMetadata {
@@ -267,6 +275,7 @@ interface IncludedAttributes {
     is_monthly?: boolean;
     is_nsfw?: boolean;
     name?: string;
+    creation_name?: string;
     show_audio_post_download_links?: boolean;
     url?: string;
     // Additional properties for other types
@@ -323,18 +332,6 @@ interface VideoIssues {
         video_codec?: string;
         video_resolution?: string;
     };
-}
-
-interface Image {
-    thumbnail: string;
-    url: string;
-    default?: string;
-    default_blurred?: string;
-    default_blurred_small?: string;
-    default_small?: string;
-    original?: string;
-    thumbnail_large?: string;
-    thumbnail_small?: string;
 }
 
 interface Metadata {

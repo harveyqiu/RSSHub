@@ -1,7 +1,7 @@
-import { Route } from '@/types';
+import type { Route } from '@/types';
 import cache from '@/utils/cache';
-import { parseDate } from '@/utils/parse-date';
 import logger from '@/utils/logger';
+import { parseDate } from '@/utils/parse-date';
 import puppeteer from '@/utils/puppeteer';
 
 export const route: Route = {
@@ -64,7 +64,7 @@ async function handler(ctx) {
     });
 
     await page.close();
-    browser.close();
+    await browser.close();
 
     const { blogList: list } = data;
     const items = await Promise.all(

@@ -1,7 +1,8 @@
-import { Route } from '@/types';
+import { load } from 'cheerio';
+
+import type { Route } from '@/types';
 import cache from '@/utils/cache';
 import got from '@/utils/got';
-import { load } from 'cheerio';
 import { parseDate } from '@/utils/parse-date';
 
 async function fetch(address) {
@@ -41,7 +42,7 @@ async function handler(ctx) {
     const link = url + type + '.htm';
     const response = await got.get(link);
     const $ = load(response.data);
-    const list = $('.download li').get();
+    const list = $('.download li').toArray();
     const out = await Promise.all(
         list.map((item) => {
             const $ = load(item);

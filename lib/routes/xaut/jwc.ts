@@ -1,8 +1,9 @@
-import { Route } from '@/types';
+import { load } from 'cheerio';
+
+import type { Route } from '@/types';
 import cache from '@/utils/cache';
 import got from '@/utils/got';
 import { parseDate } from '@/utils/parse-date';
-import { load } from 'cheerio';
 
 export const route: Route = {
     path: '/jwc/:category?',
@@ -49,7 +50,8 @@ async function handler(ctx) {
 
     const list = $('.main_conRCb a')
         .slice(0, 20)
-        .map((_, item) => {
+        .toArray()
+        .map((item) => {
             item = $(item);
             const link = item
                 .attr('href')
@@ -60,8 +62,7 @@ async function handler(ctx) {
                 link,
                 pubDate: parseDate(item.find('span').text()),
             };
-        })
-        .get();
+        });
 
     return {
         // 源标题

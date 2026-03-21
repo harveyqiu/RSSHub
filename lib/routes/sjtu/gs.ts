@@ -1,7 +1,8 @@
-import { Route } from '@/types';
+import { load } from 'cheerio';
+
+import type { Route } from '@/types';
 import cache from '@/utils/cache';
 import got from '@/utils/got';
-import { load } from 'cheerio';
 import { parseDate } from '@/utils/parse-date';
 import timezone from '@/utils/timezone';
 import { fetchArticle } from '@/utils/wechat-mp';
@@ -59,7 +60,8 @@ async function handler(ctx) {
     const $ = load(response.data);
 
     const list = $('a.announcement-item')
-        .map((_, item) => {
+        .toArray()
+        .map((item) => {
             item = $(item);
 
             const day = item.find('.day').text().trim().replace('.', '-');
@@ -70,8 +72,7 @@ async function handler(ctx) {
                 link: `${item.attr('href').startsWith('http') ? '' : rootUrl}${item.attr('href')}`,
                 pubDate: timezone(parseDate(`${year}-${day}`, 'YYYY-MM-DD'), +8),
             };
-        })
-        .get();
+        });
 
     const items = await Promise.all(
         list.map((item) =>

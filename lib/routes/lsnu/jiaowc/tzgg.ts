@@ -1,7 +1,8 @@
-import { Route } from '@/types';
+import { load } from 'cheerio';
+
+import type { Route } from '@/types';
 import cache from '@/utils/cache';
 import got from '@/utils/got';
-import { load } from 'cheerio';
 
 export const route: Route = {
     path: '/jiaowc/tzgg/:category?',
@@ -43,7 +44,7 @@ async function handler(ctx) {
     const data = response.data;
 
     const $ = load(data);
-    const list = $('tr[id^="line_u5_"]').get();
+    const list = $('tr[id^="line_u5_"]').toArray();
 
     const out = await Promise.all(
         list.map(async (item) => {

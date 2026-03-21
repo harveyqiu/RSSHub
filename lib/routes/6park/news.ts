@@ -1,9 +1,10 @@
-import { Route } from '@/types';
+import { load } from 'cheerio';
+
+import type { Route } from '@/types';
 import cache from '@/utils/cache';
 import got from '@/utils/got';
-import { load } from 'cheerio';
-import timezone from '@/utils/timezone';
 import { parseDate } from '@/utils/parse-date';
+import timezone from '@/utils/timezone';
 
 export const route: Route = {
     path: '/news/:site?/:id?/:keyword?',
@@ -38,7 +39,7 @@ async function handler(ctx) {
 
     const rootUrl = `https://${isLocal ? site : 'www'}.6parknews.com`;
     const indexUrl = `${rootUrl}${isLocal ? '' : '/newspark'}/index.php`;
-    const currentUrl = `${indexUrl}${keyword ? `?act=newssearch&app=news&keywords=${keyword}&submit=查询` : id ? (isNaN(id) ? `?act=${id}` : isLocal ? `?type_id=${id}` : `?type=${id}`) : ''}`;
+    const currentUrl = `${indexUrl}${keyword ? `?act=newssearch&app=news&keywords=${keyword}&submit=查询` : id ? (Number.isNaN(id) ? `?act=${id}` : isLocal ? `?type_id=${id}` : `?type=${id}`) : ''}`;
 
     const response = await got({
         method: 'get',

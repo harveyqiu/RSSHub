@@ -1,7 +1,8 @@
-import { Route } from '@/types';
+import { load } from 'cheerio';
+
+import type { Route } from '@/types';
 import cache from '@/utils/cache';
 import got from '@/utils/got';
-import { load } from 'cheerio';
 import { parseDate } from '@/utils/parse-date';
 import timezone from '@/utils/timezone';
 
@@ -48,7 +49,8 @@ async function handler(ctx) {
     const response = await got({ method: 'get', url });
     const $ = load(response.data);
     const list = $('ul > li.notice-li')
-        .map((i, e) => {
+        .toArray()
+        .map((e) => {
             const element = $(e);
             const title = element.find('a').text().trim();
             const link = 'https://help.aliyun.com' + element.find('a').attr('href').trim();
@@ -60,8 +62,7 @@ async function handler(ctx) {
                 link,
                 pubDate,
             };
-        })
-        .get();
+        });
 
     const result = await Promise.all(
         list.map((item) =>

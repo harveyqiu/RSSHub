@@ -1,7 +1,7 @@
-import { Route } from '@/types';
+import type { Route } from '@/types';
 import got from '@/utils/got';
-import timezone from '@/utils/timezone';
 import { parseDate } from '@/utils/parse-date';
+import timezone from '@/utils/timezone';
 
 const titles = {
     recommend: '精选',
@@ -102,7 +102,7 @@ async function handler(ctx) {
                     enclosure_length: item.media_size,
                     itunes_duration,
                     enclosure_type: 'audio/mpeg',
-                    pubDate: isNaN(+item.created_at) ? timezone(parseDate(item.created_at), +8) : parseDate(item.created_at * 1000),
+                    pubDate: Number.isNaN(+item.created_at) ? timezone(parseDate(item.created_at), +8) : parseDate(item.created_at * 1000),
                 };
             });
     }

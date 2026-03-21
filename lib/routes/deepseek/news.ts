@@ -1,7 +1,8 @@
-import { Route, Data, DataItem } from '@/types';
-import ofetch from '@/utils/ofetch';
-import { load } from 'cheerio';
+import * as cheerio from 'cheerio';
+
+import type { Data, DataItem, Route } from '@/types';
 import cache from '@/utils/cache';
+import ofetch from '@/utils/ofetch';
 
 const ROOT_URL = 'https://api-docs.deepseek.com/zh-cn';
 
@@ -12,7 +13,7 @@ const ARTICLE_TITLE_SELECTOR = ARTICLE_CONTENT_SELECTOR + ' > h1';
 // 获取消息列表 / get article list
 const fetchPageContent = async (url: string) => {
     const response = await ofetch(url);
-    return load(response);
+    return cheerio.load(response);
 };
 
 // 提取正文内容 / extract article content

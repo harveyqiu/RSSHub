@@ -1,12 +1,16 @@
-import { Route } from '@/types';
-import got from '@/utils/got';
-import cache from './cache';
-import { config } from '@/config';
-import utils from './utils';
+import querystring from 'node:querystring';
+
 import JSONbig from 'json-bigint';
-import { fallback, queryToBoolean } from '@/utils/readable-social';
-import querystring from 'querystring';
+
+import { config } from '@/config';
 import ConfigNotFoundError from '@/errors/types/config-not-found';
+import type { Route } from '@/types';
+import got from '@/utils/got';
+import logger from '@/utils/logger';
+import { fallback, queryToBoolean } from '@/utils/readable-social';
+
+import cache from './cache';
+import utils from './utils';
 
 export const route: Route = {
     path: '/followings/dynamic/:uid/:routeParams?',
@@ -101,14 +105,14 @@ async function handler(ctx) {
         let imgs = '';
         // 动态图片
         if (data.pictures) {
-            for (let i = 0; i < data.pictures.length; i++) {
-                imgs += `<img src="${data.pictures[i].img_src}">`;
+            for (const pic of data.pictures) {
+                imgs += `<img src="${pic.img_src}">`;
             }
         }
         // 专栏封面
         if (data.image_urls) {
-            for (let i = 0; i < data.image_urls.length; i++) {
-                imgs += `<img src="${data.image_urls[i]}">`;
+            for (const url of data.image_urls) {
+                imgs += `<img src="${url}">`;
             }
         }
         // 视频封面
@@ -132,9 +136,14 @@ async function handler(ctx) {
         data.map(async (item) => {
             const parsed = JSONbig.parse(item.card);
             const data = parsed.apiSeasonInfo || (getTitle(parsed.item) ? parsed.item : parsed);
-            // parsed.origin is already parsed, and it may be json or string.
-            // Don't parse it again, or it will cause an error.
-            const origin = parsed.origin || null;
+            let origin = parsed.origin;
+            if (origin) {
+                try {
+                    origin = JSONbig.parse(origin);
+                } catch {
+                    logger.warn(`card.origin '${origin}' is not falsy-valued or a JSON string, fall back to unparsed value`);
+                }
+            }
 
             // img
             let imgHTML = '';

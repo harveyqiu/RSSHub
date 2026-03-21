@@ -1,9 +1,10 @@
-import { Route } from '@/types';
-import cache from '@/utils/cache';
 import { load } from 'cheerio';
+
+import type { Route } from '@/types';
+import cache from '@/utils/cache';
 import got from '@/utils/got';
-import timezone from '@/utils/timezone';
 import { parseDate } from '@/utils/parse-date';
+import timezone from '@/utils/timezone';
 
 export const route: Route = {
     path: '/:type?',
@@ -38,15 +39,15 @@ async function handler(ctx) {
 
     const $ = load(response.data);
     const list = $('div#newsquery > ul > li')
-        .map((_, item) => {
+        .toArray()
+        .map((item) => {
             item = $(item);
             return {
                 title: item.find('div.title > a').text(),
                 link: new URL(item.find('div.title > a').attr('href'), baseUrl).href,
                 // pubDate: parseDate(item.find('div.time').text(), 'YYYY-MM-DD'),
             };
-        })
-        .get();
+        });
 
     await Promise.all(
         list.map((item) =>
